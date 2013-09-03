@@ -1,0 +1,42 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Term::ANSIColor qw/:constants/;
+
+my ($arg, @cmd, $rxp_arg, $verbose);
+$rxp_arg = qr/^@(\d+)$/;
+@cmd = (qw/git stash/);
+$verbose = 0;
+foreach $arg (@ARGV) {
+    if ($arg =~ /$rxp_arg/) {
+        push(@cmd, "stash\@{$1}");
+    }
+    elsif ($arg eq '-V') {
+        $verbose = 1;
+    }
+    else {
+        push(@cmd, $arg);
+    }
+}
+if (scalar(@cmd) == 2) {
+    push(@cmd, 'list');
+}
+
+if ($verbose) {
+    local $, = ' ';
+    print BLUE . 'CMD:' . GREEN, @cmd, RESET . "\n";
+}
+
+my ($fh, $line, $rxp_line);
+$rxp_line = qr/^stash\@\{(\d+)\}:\s*(.*)\s*/;
+open($fh, '-|', @cmd) or die('Cannot run git: ' . $!);
+while(defined($line = <$fh>)) {
+    if ($line !~ /$rxp_line/) {
+        print RED, 'Unknown line format: ', $line, "\n";
+    }
+    else {
+        print BLUE, 'stash@{', GREEN, $1, BLUE, '}: ', RESET, $2, "\n";
+    }
+}
